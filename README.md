@@ -1,220 +1,173 @@
-# Talking Head Generator 🎭
+## Talking Head Generator 🎭
 
-A powerful web application that generates realistic talking head videos using both 2D SadTalker and 3D Blender models. Create animated videos from text input with synchronized speech and facial expressions.
+Generate talking head videos from text using a modern web UI. The project integrates a 2D SadTalker pipeline, an optional 3D pipeline, and voice cloning via Coqui TTS XTTS v2, with fallbacks and utility scripts to make setup smooth on Windows.
 
-## ✨ Features
+### What you can build
+- Create a video of a face speaking your text from a single image (2D SadTalker)
+- Optionally synthesize speech with a cloned voice from a short audio sample (XTTS v2)
+- Experiment with 3D animation paths (Blender-based and simple alternatives)
+- Run everything from a clean Gradio UI with downloads
 
-- **🎬 2D SadTalker Animation**: Upload a photo and generate talking head videos with realistic lip-sync
-- **🎭 3D Model Animation**: Create 3D talking head animations using Blender with shape key expressions
-- **🗣️ Text-to-Speech**: Automatic audio generation from text input using pyttsx3
-- **😊 Expression Animation**: Realistic facial expressions synchronized with speech
-- **📥 Download Support**: Generated videos can be downloaded in various formats
-- **🌐 Web Interface**: User-friendly Gradio web interface
-- **⚡ Real-time Processing**: Fast generation with progress tracking
+## Features (detailed)
 
+- **2D talking head (SadTalker)**
+  - Upload an image and enter text → generates a lip-synced video.
+  - Implemented in `app_gui.py` via `generate_2d_talking_head` and SadTalker `inference.py`.
+  - Results are saved under `results/` and auto-discovered for preview/download.
 
+- **Voice cloning (Coqui TTS, XTTS v2)**
+  - Optional: upload a reference audio file to clone the voice that reads your text.
+  - Implemented in `app_gui.py` via `clone_voice_with_coqui` with model `tts_models/multilingual/multi-dataset/xtts_v2`.
+  - Falls back to local TTS (`pyttsx3`) if cloning fails or is not provided.
 
-## 🚀 Quick Start
+- **Default TTS fallback (pyttsx3)**
+  - Works offline for quick testing without heavy models.
+  - Used by 2D and 3D paths when voice cloning is not requested.
+
+- **Web UI (Gradio Blocks)**
+  - Clean UI with dark mode toggle, drag-and-drop image and audio inputs, and a video player.
+  - Buttons to generate and download; status messages for errors.
+  - Implemented in `app_gui.py` with custom CSS from `style.css`.
+
+- **3D animation (experimental, optional)**
+  - Path 1: Blender-based workflow driven by audio-to-expression coefficients (calls `blender_3d_render.py`; provide this script and a suitable head .blend file).
+  - Path 2: Simple alternative 3D helpers embedded in `app_gui.py` (no `pytorch3d`), documented in `README_Simple_3D.md`.
+  - Standalone textured 3D script `textured_talking_head.py` to render frames and assemble a speaking video with FFmpeg.
+
+- **Local TTS microservice (optional)**
+  - `tts_server.py` exposes a simple Flask `/tts` endpoint for programmatic TTS.
+  - Useful if you want to decouple synthesis from the UI pipeline.
+
+- **Windows-friendly utilities and fixes**
+  - `fix_transformers.py`, `fix_pytorch_tts.py`, `fix_windows_pytorch.py` help resolve common Torch/Transformers/TTS incompatibilities.
+  - Requirements are pinned to working versions in `requirements.txt`.
+
+## Quick start
 
 ### Prerequisites
+- Python 3.10 recommended
+- FFmpeg installed and on PATH (ffmpeg/ffprobe)
+- (Optional) Blender 3.x+ for the experimental 3D path
 
-#### Required Software
-
-1. **🐍 Python 3.8+**
-2. **🎬 FFmpeg**: Download from [https://ffmpeg.org/download.html](https://ffmpeg.org/download.html)
-   - Extract to a directory (e.g., `C:\ffmpeg`)
-   - Add the `bin` folder to your system PATH
-3. **🎨 Blender 3.0+**: Download from [https://www.blender.org/download/](https://www.blender.org/download/)
-   - Install to default location or ensure it's in your system PATH
-
-#### Python Dependencies
-
-Install the required Python packages:
-
+### Install
 ```bash
 pip install -r requirements.txt
 ```
 
-### 📦 Installation
-
-1. **Clone the repository**:
-```bash
-git clone <repository-url>
-cd talking-head
-```
-
-2. **Install dependencies**:
-```bash
-pip install -r requirements.txt
-```
-
-3. **Download SadTalker models**:
+### Download SadTalker models
 ```bash
 cd SadTalker
-python scripts/download_models.sh
+bash scripts/download_models.sh   # or run the equivalent steps on Windows/Git Bash
 cd ..
 ```
 
-### ⚙️ Configuration
-
-#### Configure FFmpeg Path
-
-Update the FFmpeg path in `app_gui.py` if needed:
-
-```python
-ffmpeg_bin = r"C:\path\to\your\ffmpeg\bin"
-```
-
-#### Prepare 3D Model (Optional)
-
-If you want to use a custom 3D head model:
-1. Create or obtain a Blender file with a head mesh
-2. Name it `HEAD .blend` and place it in the root directory
-3. Ensure the head mesh has shape keys for expressions:
-   - `brow_up`, `brow_down`
-   - `eye_blink`
-   - `mouth_open`, `mouth_smile`, `mouth_frown`
-
-## 🎯 Usage
-
-### 🚀 Running the Application
-
+### Run
 ```bash
 python app_gui.py
 ```
+Open `http://localhost:7860`.
 
-The web interface will open at `http://localhost:7860`
+## Using the app
 
-### 🖥️ Using the Interface
+1) Select model type
+- 2D SadTalker (requires an image)
+- 3D Model (experimental; see notes below)
 
-#### 1. **Select Model Type**:
-   - **🎬 2D SadTalker**: Requires uploading a photo
-   - **🎭 3D Model**: Works with text input only
+2) Inputs
+- Image: clear, front-facing portrait (for 2D)
+- Voice sample (optional): WAV/MP3 for cloning
+- Text: what the model should say
 
-#### 2. **For 2D SadTalker**:
-   - Upload a clear, front-facing photo
-   - Enter the text you want the person to speak
-   - Click "Submit" to generate the video
+3) Generate and download
+- Click Generate. When finished, use the Download button to save the `.mp4`.
 
-#### 3. **For 3D Model**:
-   - Simply enter the text you want the 3D model to speak
-   - Click "Submit" to generate the 3D animation
+Notes
+- Voice cloning uses XTTS v2 and may need first-time model downloads.
+- If cloning fails, the pipeline automatically falls back to `pyttsx3`.
 
-#### 4. **Download**: Once generation is complete, you can download the video file
+## 3D options (experimental)
 
-### 📝 Example Usage
+- Blender-driven path (from `app_gui.py` → `call_blender_render`)
+  - Requires `blender_3d_render.py` and a compatible head `.blend` with expression shape keys.
+  - Configure Blender executable search paths in `app_gui.py` or ensure Blender is on PATH.
 
-- **2D Example**: Upload a photo of a person and enter "Hello, this is a test of the talking head system."
-- **3D Example**: Enter "Welcome to the 3D talking head demonstration."
+- Simple 3D fallback (no `pytorch3d`)
+  - Helpers in `app_gui.py` and detailed guide in `README_Simple_3D.md`.
+  - Generates basic expression-driven imagery for testing.
 
-## 📁 Project Structure
+- Textured 3D standalone
+  - Run `python textured_talking_head.py` to render frames and compose a video with FFmpeg.
+
+## Configuration
+
+- FFmpeg/ffprobe
+  - On Windows you can hardcode paths in `app_gui.py` (`ffmpeg_bin`, `ffprobe_path`).
+  - Or add FFmpeg `bin` folder to your system PATH.
+
+- Blender
+  - Edit the `blender_paths` list in `app_gui.py` or add Blender to PATH.
+
+- SadTalker
+  - Ensure checkpoints exist under `SadTalker/checkpoints/` (download script or manual).
+
+## Project structure
 
 ```
 talking-head/
-├── 📄 app_gui.py                    # Main application file with Gradio interface
-├── 📄 textured_talking_head.py      # 3D talking head implementation
-├── 📄 test_alternatives.py          # Alternative testing implementations
-├── 📄 tts_server.py                 # Text-to-speech server
-├── 📄 input_to_speech.py            # Speech input processing
-├── 📄 requirements.txt              # Python dependencies
-├── 📄 README.md                     # This documentation file
-├── 📄 README_Simple_3D.md           # Simple 3D implementation guide
-├── 📁 SadTalker/                    # SadTalker implementation
-├── 📁 DECA/                         # DECA face reconstruction
-├── 📁 gfpgan/                       # GFPGAN face enhancement
-├── 📁 results/                      # Generated videos (gitignored)
-├── 📁 venv/                         # Virtual environment (gitignored)
-├── 📁 tts_env/                      # TTS environment (gitignored)
-├── 📁 .gradio/                      # Gradio cache (gitignored)
-└── 📁 __pycache__/                  # Python cache (gitignored)
+├── app_gui.py                 # Main web app (Gradio UI + pipelines)
+├── textured_talking_head.py   # Standalone textured 3D example
+├── tts_server.py              # Optional Flask TTS microservice
+├── README_Simple_3D.md        # Simple 3D alternative guide
+├── requirements.txt           # Pinned, Windows-friendly deps
+├── fix_transformers.py        # Transformers/TTS compat helper
+├── fix_pytorch_tts.py         # Torch/TTS compat helper
+├── fix_windows_pytorch.py     # Windows-focused Torch/TTS helper
+├── SadTalker/                 # Upstream code and models
+├── DECA/                      # DECA assets/configs (optional)
+└── results/                   # Generated outputs
 ```
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
-### ❗ Common Issues
+- FFmpeg not found
+  - Install FFmpeg and ensure `ffmpeg`/`ffprobe` are on PATH or update `app_gui.py` paths.
 
-#### 1. **FFmpeg not found**:
-   - Ensure FFmpeg is installed and in your PATH
-   - Update the path in `app_gui.py`
+- Blender not found (3D path)
+  - Install Blender and ensure the executable is discoverable; update `blender_paths` in `app_gui.py`.
 
-#### 2. **Blender not found**:
-   - Install Blender and ensure it's in your PATH
-   - Or update the blender paths in `app_gui.py`
+- Transformers/TTS errors (XTTS v2)
+  - Use the pinned versions in `requirements.txt`.
+  - Run: `python fix_transformers.py` or `python fix_pytorch_tts.py` on issues.
+  - On Windows, `python fix_windows_pytorch.py` can switch to CPU-only Torch if needed.
 
-#### 3. **SadTalker models missing**:
-   - Run the download script in the SadTalker directory
-   - Ensure you have sufficient disk space
+- Missing SadTalker models
+  - Run the download script in `SadTalker/scripts` or fetch checkpoints manually into `SadTalker/checkpoints/`.
 
-#### 4. **CUDA/GPU issues**:
-   - The application will fall back to CPU if CUDA is not available
-   - Install appropriate PyTorch version for your system
+- CUDA/GPU
+  - The app works on CPU; install a CUDA-enabled Torch build for acceleration if available.
 
-#### 5. **Memory issues**:
-   - Close other applications to free up RAM
-   - Use shorter text inputs for 3D generation
+## Technical overview
 
-### ⚡ Performance Tips
+- 2D pipeline
+  - Text → speech (XTTS v2 or `pyttsx3`) → SadTalker `inference.py` → `.mp4` in `results/`.
 
-- Use shorter text inputs for faster generation
-- Ensure sufficient disk space for temporary files
-- Close unnecessary applications during generation
-- For 3D rendering, ensure Blender has access to sufficient system resources
+- 3D experimental pipeline
+  - Text → speech → audio-to-expression features → Blender head animation (via external script) → frames → video.
 
-## 🔬 Technical Details
+- TTS microservice
+  - `POST /tts` with `text` (and optional `speaker`) returns a WAV file (`tts_server.py`).
 
-### 🎬 2D Pipeline (SadTalker)
-1. **Text-to-speech conversion** using pyttsx3
-2. **Face detection and landmark extraction**
-3. **Expression coefficient generation** from audio
-4. **Video synthesis** using SadTalker
+## License and attributions
 
-### 🎭 3D Pipeline (Blender)
-1. **Text-to-speech conversion** using pyttsx3
-2. **Expression coefficient generation** from audio using SadTalker's audio2exp model
-3. **3D animation** using Blender with shape keys
-4. **Frame rendering and video assembly**
+This project includes and/or integrates with:
+- SadTalker (see `SadTalker/LICENSE`)
+- DECA (see `DECA/LICENSE`)
+- Blender (GPL) — required for the Blender-based 3D path
 
-## 📋 Dependencies
+## Contributing
 
-### Core Dependencies
-- **gradio** (≥3.50.0) - Web interface
-- **torch** (≥1.9.0) - Deep learning framework
-- **opencv-python** (≥4.5.0) - Computer vision
-- **Pillow** (≥8.0.0) - Image processing
-- **numpy** (≥1.21.0) - Numerical computing
-- **pyttsx3** (≥2.90) - Text-to-speech
-- **ffmpy** (≥0.2.2) - FFmpeg wrapper
-- **librosa** (≥0.8.0) - Audio processing
-
-## 📄 License
-
-This project uses components from:
-- **SadTalker** (MIT License)
-- **DECA** (MIT License)
-- **Blender** (GPL License)
-
-## 🤝 Contributing
-
-We welcome contributions! Please feel free to:
-- Submit issues and enhancement requests
-- Fork the repository and create pull requests
-- Improve documentation
-- Add new features
-
-## 🆘 Support
-
-For issues and questions:
-1. Check the troubleshooting section above
-2. Search existing issues in the repository
-3. Create a new issue with detailed information
-
-## 🙏 Acknowledgments
-
-- **SadTalker** team for the amazing talking head generation model
-- **DECA** team for face reconstruction capabilities
-- **Blender Foundation** for the powerful 3D software
-- **Gradio** team for the excellent web interface framework
+Issues and PRs are welcome. Ideas that help Windows setup, dependency stability, or better 3D integration are especially appreciated.
 
 ---
 
-**⭐ If you find this project useful, please give it a star!** 
+If this project helps you, please consider starring it.
