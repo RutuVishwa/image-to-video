@@ -185,6 +185,7 @@ results/
 output/
 generated/
 frames_*/
+backend_release/
 
 # Gradio cache
 .gradio/

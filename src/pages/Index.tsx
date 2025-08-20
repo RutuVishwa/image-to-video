@@ -29,6 +29,7 @@ const Index = () => {
   const [filmstripItems, setFilmstripItems] = useState<FilmstripItem[]>([]);
   const [currentPlayingVideo, setCurrentPlayingVideo] = useState<string | null>(null);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [liveLogs, setLiveLogs] = useState<string[]>([]);
   
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -119,10 +120,31 @@ const Index = () => {
     }
 
     setIsGenerating(true);
+    setLiveLogs([]);
     setCurrentStep(4);
     setCurrentPlayingVideo(null); // Clear any currently playing video
     
+    let es: EventSource | null = null;
     try {
+      // Start listening to live logs via SSE
+      const dev = import.meta && (import.meta as any).env && (import.meta as any).env.DEV;
+      const apiPort = ((import.meta as any).env && (import.meta as any).env.VITE_API_PORT) || 7860;
+      const logsUrl = dev ? `http://localhost:${apiPort}/api/logs/stream` : '/logs/stream';
+      es = new EventSource(logsUrl);
+      es.onopen = () => {
+        setLiveLogs(prev => [...prev, '[logs] connected']);
+      };
+      es.onmessage = (e) => {
+        const msg = (e.data || '').toString();
+        // Filter warnings just in case
+        if (!msg.startsWith('WARNING:') && !msg.toLowerCase().includes('safetensor')) {
+          setLiveLogs(prev => [...prev, msg]);
+        }
+      };
+      es.onerror = () => {
+        // Let browser auto-retry; surface a single line once
+        setLiveLogs(prev => prev.length && prev[prev.length-1].includes('reconnecting') ? prev : [...prev, '[logs] reconnecting...']);
+      };
       // Create FormData for the API call
       const formData = new FormData();
       formData.append('image', selectedImage);
@@ -171,6 +193,9 @@ const Index = () => {
         variant: "destructive",
       });
     } finally {
+      if (es) {
+        es.close();
+      }
       setIsGenerating(false);
     }
   };
@@ -324,6 +349,7 @@ const Index = () => {
             onTextChange={setTextInput}
             currentPlayingVideo={currentPlayingVideo}
             filmstripItems={filmstripItems}
+            logs={liveLogs}
           />
         </div>
 

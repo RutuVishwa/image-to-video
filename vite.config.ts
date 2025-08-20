@@ -14,9 +14,14 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/generate': {
-        target: 'http://localhost:7860',
+        target: `http://localhost:${process.env.API_PORT || 7860}`,
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/generate/, '/api/generate')
+      },
+      '/logs': {
+        target: `http://localhost:${process.env.API_PORT || 7860}`,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/logs/, '/api/logs')
       }
     }
   }

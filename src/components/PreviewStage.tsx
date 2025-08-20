@@ -1,4 +1,5 @@
 import { Play, Upload, Image as ImageIcon, Mic, Type } from "lucide-react";
+import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 
 interface PreviewStageProps {
@@ -12,6 +13,7 @@ interface PreviewStageProps {
   onTextChange: (text: string) => void;
   currentPlayingVideo?: string | null;
   filmstripItems?: FilmstripItem[];
+  logs?: string[];
 }
 
 interface FilmstripItem {
@@ -32,8 +34,10 @@ export const PreviewStage = ({
   textInput,
   onTextChange,
   currentPlayingVideo,
-  filmstripItems
+  filmstripItems,
+  logs
 }: PreviewStageProps) => {
+  const logRef = useRef<HTMLDivElement | null>(null);
   return (
     <div className="glass-card p-8 aspect-video flex flex-col items-center justify-center relative overflow-hidden preview-stage max-w-4xl mx-auto">
       {/* Background Pattern */}
@@ -124,7 +128,7 @@ export const PreviewStage = ({
       )}
 
       {isGenerating && (
-        <div className="text-center space-y-6 relative z-10">
+        <div className="text-center space-y-6 relative z-10 w-full max-w-3xl">
           <div className="relative">
             <div className="w-24 h-24 mx-auto glass-card rounded-full flex items-center justify-center animate-pulse-glow">
               <Play size={48} className="text-white" />
@@ -134,6 +138,16 @@ export const PreviewStage = ({
           <div>
             <h3 className="text-xl font-bold gradient-text">Generating Your Video...</h3>
             <p className="text-muted-foreground">This might take a few moments</p>
+          </div>
+          {/* Single line live status */}
+          <div className="mt-2 min-h-[1.5rem]">
+            <p ref={logRef} className="text-sm text-gray-200/90 font-mono">
+              {(() => {
+                const items = (logs || []).filter(l => l && !l.startsWith('[logs]'));
+                if (items.length === 0) return 'Waiting for logs...';
+                return items[items.length - 1];
+              })()}
+            </p>
           </div>
         </div>
       )}

@@ -45,24 +45,68 @@ Generate talking head videos from text using a modern web UI. The project integr
 ## Quick start
 
 ### Prerequisites
-- Python 3.10 recommended
+- Python 3.10 (64‑bit) recommended
+- Node.js 18+ (includes npm)
 - FFmpeg installed and on PATH (ffmpeg/ffprobe)
+- (Optional) NVIDIA GPU + CUDA for faster inference
 - (Optional) Blender 3.x+ for the experimental 3D path
 
-### Install
-```bash
+### Install (first time)
+```powershell
+# 1) Clone and enter repo
+git clone <your-repo-url> talking-head
+cd talking-head
+
+# 2) Python virtual environment
+python -m venv .venv
+.venv\Scripts\activate
+
+# 3) Backend dependencies
+pip install --upgrade pip
 pip install -r requirements.txt
+
+# (Optional) Install CUDA-enabled PyTorch matching your CUDA version
+# See https://pytorch.org/get-started/locally/
+# Example for CUDA 11.8:
+# pip install --index-url https://download.pytorch.org/whl/cu118 torch torchvision torchaudio
+
+# 4) Frontend dependencies
+npm install
+
+# 5) Frontend env (backend port)
+"VITE_API_PORT=7860" | Out-File -Encoding utf8 -NoNewline .env
 ```
 
 ### Download SadTalker models
+Option A (Git Bash/WSL):
 ```bash
-cd SadTalker
-bash scripts/download_models.sh   # or run the equivalent steps on Windows/Git Bash
-cd ..
+# from repo root
+bash scripts/download_models.sh
 ```
 
-### Run
-```bash
+Option B (manual):
+- Place required checkpoints under `SadTalker/checkpoints/` as per SadTalker docs.
+- Ensure GFPGAN weights exist under `gfpgan/weights/`.
+
+### Run (Modern Web UI)
+Open two terminals.
+
+Terminal A (backend):
+```powershell
+.venv\Scripts\activate
+python .\api_server.py
+```
+
+Terminal B (frontend):
+```powershell
+npm run dev
+```
+
+Open `http://localhost:3000`. The UI connects to the backend on port `7860` and shows a single live status line while generating.
+
+### Run (Legacy Gradio UI)
+```powershell
+.venv\Scripts\activate
 python app_gui.py
 ```
 Open `http://localhost:7860`.
@@ -161,8 +205,7 @@ talking-head/
 
 This project includes and/or integrates with:
 - SadTalker (see `SadTalker/LICENSE`)
-- DECA (see `DECA/LICENSE`)
-- Blender (GPL) — required for the Blender-based 3D path
+
 
 ## Contributing
 
